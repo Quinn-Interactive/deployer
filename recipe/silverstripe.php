@@ -28,30 +28,39 @@ set('writable_dirs', [
     '{{shared_assets}}',
 ]);
 
-// Silverstripe cli script
-set('silverstripe_cli_script', function () {
-    $paths = [
-        'framework/cli-script.php',
-        'vendor/silverstripe/framework/cli-script.php',
-    ];
-    foreach ($paths as $path) {
-        if (test('[ -f {{release_or_current_path}}/' . $path . ' ]')) {
-            return $path;
-        }
+// Retain silverstripe_cli_script for compatibility with overrides
+set('silverstripe_cli_script', 'vendor/bin/sake');
+
+// Silverstripe version detection 
+set('silverstripe6', test('[ -f {{release_or_current_path}}/vendor/silverstripe/framework/bin/sake ]'));
+
+// dev/build or db:build
+set('silverstripe_build_command', function () {
+    if (get('silverstripe6')) {
+        return 'db:build';
     }
+    return 'dev/build';
+});
+
+// flush=1 or --flush
+set('silverstripe_flush_option', function () {
+    if (get('silverstripe6')) {
+        return '--flush';
+    }
+    return 'flush=1';
 });
 
 /**
  * Helper tasks
  */
-desc('Runs /dev/build');
+desc('Runs dev/build or db:build as appropriate');
 task('silverstripe:build', function () {
-    run('{{bin/php}} {{release_or_current_path}}/{{silverstripe_cli_script}} /dev/build');
+    run('{{release_or_current_path}}/{{silverstripe_cli_script}} {{silverstripe_build_command}}');
 });
 
-desc('Runs /dev/build?flush=all');
+desc('Runs dev/build?flush=all or db:build --flush as appropriate');
 task('silverstripe:buildflush', function () {
-    run('{{bin/php}} {{release_or_current_path}}/{{silverstripe_cli_script}} /dev/build flush=all');
+    run('{{release_or_current_path}}/{{silverstripe_cli_script}} {{silverstripe_build_command}} {{silverstripe_flush_option}}');
 });
 
 /**
